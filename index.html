@@ -1,0 +1,527 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word File Merger</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f3f5f9;
+    color: #222;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.container {
+    width: 100%;
+    max-width: 650px;
+    background: white;
+    padding: 30px;
+    border-radius: 14px;
+    box-shadow: 0 5px 25px #00000012;
+}
+
+h1 {
+    text-align: center;
+    margin: 0 0 8px;
+    font-size: 27px;
+}
+
+.subtitle {
+    text-align: center;
+    color: #777;
+    margin-bottom: 25px;
+}
+
+.drop-area {
+    border: 2px dashed #aab5c5;
+    border-radius: 12px;
+    padding: 35px 15px;
+    text-align: center;
+    cursor: pointer;
+    background: #fafbff;
+    transition: 0.2s;
+}
+
+.drop-area:hover,
+.drop-area.dragover {
+    border-color: #2864dc;
+    background: #eff5ff;
+}
+
+.drop-area .symbol {
+    font-size: 45px;
+    margin-bottom: 10px;
+}
+
+.drop-area p {
+    margin: 7px;
+    color: #555;
+}
+
+.browse {
+    color: #2864dc;
+    font-weight: bold;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+.file-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 25px;
+    margin-bottom: 10px;
+}
+
+.file-heading h3 {
+    margin: 0;
+    font-size: 17px;
+}
+
+.file-count {
+    color: #777;
+    font-size: 13px;
+}
+
+.file-list {
+    border: 1px solid #e3e6ed;
+    border-radius: 9px;
+    overflow: hidden;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    background: white;
+    cursor: grab;
+}
+
+.file-item:last-child {
+    border-bottom: none;
+}
+
+.file-item.dragging {
+    opacity: 0.4;
+}
+
+.file-icon {
+    font-size: 25px;
+}
+
+.file-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.file-name {
+    font-size: 14px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-size {
+    color: #888;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.remove {
+    border: none;
+    background: #fff0f0;
+    color: #e04444;
+    border-radius: 6px;
+    padding: 7px 11px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.remove:hover {
+    background: #ffdddd;
+}
+
+.empty {
+    padding: 25px;
+    text-align: center;
+    color: #999;
+    font-size: 14px;
+}
+
+.settings {
+    margin-top: 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.settings label {
+    font-size: 14px;
+    color: #444;
+}
+
+select {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 22px;
+}
+
+button {
+    font-size: 14px;
+}
+
+.merge-btn {
+    flex: 1;
+    padding: 14px;
+    background: #2864dc;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.merge-btn:hover {
+    background: #174db9;
+}
+
+.merge-btn:disabled {
+    background: #aab8d3;
+    cursor: not-allowed;
+}
+
+.clear-btn {
+    padding: 14px 18px;
+    background: #eee;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.status {
+    margin-top: 18px;
+    text-align: center;
+    font-size: 14px;
+    color: #2864dc;
+    min-height: 20px;
+}
+
+.note {
+    margin-top: 20px;
+    padding: 12px;
+    background: #f7f8fa;
+    border-radius: 7px;
+    color: #777;
+    font-size: 12px;
+    line-height: 1.6;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>📄 Word File Merger</h1>
+    <p class="subtitle">Combine multiple Word documents into one file</p>
+
+    <div class="drop-area" id="dropArea">
+        <div class="symbol">📁</div>
+        <p><strong>Drag and drop Word files here</strong></p>
+        <p>or <span class="browse">Browse files</span></p>
+        <p style="font-size:12px;color:#999">
+            Supports .docx files
+        </p>
+    </div>
+
+    <input type="file" id="fileInput"
+           accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+           multiple>
+
+    <div class="file-heading">
+        <h3>Selected Documents</h3>
+        <span class="file-count" id="fileCount">0 files</span>
+    </div>
+
+    <div class="file-list" id="fileList">
+        <div class="empty">No Word files selected</div>
+    </div>
+
+    <div class="settings">
+        <label>
+            <input type="checkbox" id="pageBreak" checked>
+            Add page break between documents
+        </label>
+
+        <label>
+            Output:
+            <select id="outputName">
+                <option value="merged-document">Merged Document</option>
+                <option value="combined-word-files">Combined Word Files</option>
+            </select>
+        </label>
+    </div>
+
+    <div class="actions">
+        <button class="merge-btn" id="mergeBtn" disabled>
+            Merge & Download Word File
+        </button>
+
+        <button class="clear-btn" id="clearBtn">
+            Clear All
+        </button>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="note">
+        <strong>Note:</strong> Files are processed locally in your browser.
+        Your documents are not uploaded to any server.
+        Reorder documents by dragging them in the list.
+    </div>
+
+</div>
+
+<!-- DOCX Merger Library -->
+<script src="./docx-merger.js"></script>
+
+<script>
+const fileInput = document.getElementById("fileInput");
+const dropArea = document.getElementById("dropArea");
+const fileList = document.getElementById("fileList");
+const fileCount = document.getElementById("fileCount");
+const mergeBtn = document.getElementById("mergeBtn");
+const clearBtn = document.getElementById("clearBtn");
+const status = document.getElementById("status");
+
+let files = [];
+let draggedIndex = null;
+
+// Open file selector
+dropArea.addEventListener("click", () => {
+    fileInput.click();
+});
+
+// Add selected files
+fileInput.addEventListener("change", e => {
+    addFiles(Array.from(e.target.files));
+    fileInput.value = "";
+});
+
+// Drag and drop files
+dropArea.addEventListener("dragover", e => {
+    e.preventDefault();
+    dropArea.classList.add("dragover");
+});
+
+dropArea.addEventListener("dragleave", () => {
+    dropArea.classList.remove("dragover");
+});
+
+dropArea.addEventListener("drop", e => {
+    e.preventDefault();
+    dropArea.classList.remove("dragover");
+    addFiles(Array.from(e.dataTransfer.files));
+});
+
+// Add files to list
+function addFiles(newFiles) {
+    let added = 0;
+
+    newFiles.forEach(file => {
+        if (!file.name.toLowerCase().endsWith(".docx")) {
+            return;
+        }
+
+        // Avoid duplicate file entries
+        const duplicate = files.some(
+            f => f.name === file.name &&
+                 f.size === file.size &&
+                 f.lastModified === file.lastModified
+        );
+
+        if (!duplicate) {
+            files.push(file);
+            added++;
+        }
+    });
+
+    if (added === 0 && newFiles.length > 0) {
+        status.textContent = "No new valid DOCX files added.";
+    } else {
+        status.textContent = "";
+    }
+
+    renderFiles();
+}
+
+// Display files
+function renderFiles() {
+    fileList.innerHTML = "";
+
+    fileCount.textContent =
+        files.length + (files.length === 1 ? " file" : " files");
+
+    mergeBtn.disabled = files.length < 2;
+
+    if (files.length === 0) {
+        fileList.innerHTML =
+            '<div class="empty">No Word files selected</div>';
+        return;
+    }
+
+    files.forEach((file, index) => {
+        const item = document.createElement("div");
+        item.className = "file-item";
+        item.draggable = true;
+
+        item.innerHTML = `
+            <span class="file-icon">📘</span>
+            <div class="file-info">
+                <div class="file-name"></div>
+                <div class="file-size">
+                    ${formatSize(file.size)} · Document ${index + 1}
+                </div>
+            </div>
+            <button class="remove" title="Remove file">✕</button>
+        `;
+
+        item.querySelector(".file-name").textContent = file.name;
+
+        item.querySelector(".remove").addEventListener("click", () => {
+            files.splice(index, 1);
+            renderFiles();
+        });
+
+        item.addEventListener("dragstart", () => {
+            draggedIndex = index;
+            item.classList.add("dragging");
+        });
+
+        item.addEventListener("dragend", () => {
+            draggedIndex = null;
+            item.classList.remove("dragging");
+        });
+
+        item.addEventListener("dragover", e => {
+            e.preventDefault();
+        });
+
+        item.addEventListener("drop", e => {
+            e.preventDefault();
+
+            if (draggedIndex === null || draggedIndex === index) {
+                return;
+            }
+
+            const moved = files.splice(draggedIndex, 1)[0];
+            files.splice(index, 0, moved);
+
+            renderFiles();
+        });
+
+        fileList.appendChild(item);
+    });
+}
+
+// File size formatter
+function formatSize(bytes) {
+    if (bytes < 1024 * 1024) {
+        return (bytes / 1024).toFixed(1) + " KB";
+    }
+
+    return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+}
+
+// Merge documents
+mergeBtn.addEventListener("click", async () => {
+
+    if (files.length < 2) {
+        status.textContent = "Select at least two Word documents.";
+        return;
+    }
+
+    if (!window.DocxMerger) {
+        status.textContent = "Merger library failed to load. Check internet.";
+        return;
+    }
+
+    mergeBtn.disabled = true;
+    status.textContent = "Merging documents... Please wait.";
+
+    try {
+        const mergedBlob = await window.DocxMerger.mergeDocxFromFiles(
+            files,
+            {
+                insertEnd: true,
+                mergeStyles: true,
+                mergeNumbering: true,
+                mergeFootnotes: true,
+                pageBreaks: document.getElementById("pageBreak").checked
+            }
+        );
+
+        const url = URL.createObjectURL(mergedBlob);
+
+        const outputName = document.getElementById("outputName").value;
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = outputName + ".docx";
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+
+        status.textContent = "✓ Successfully merged and downloaded!";
+
+    } catch (error) {
+        console.error(error);
+        status.textContent = "Merge failed: " + error.message;
+    }
+
+    mergeBtn.disabled = files.length < 2;
+});
+
+// Clear all files
+clearBtn.addEventListener("click", () => {
+    files = [];
+    fileInput.value = "";
+    status.textContent = "";
+    renderFiles();
+});
+
+renderFiles();
+</script>
+
+</body>
+</html>
